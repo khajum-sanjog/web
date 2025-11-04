@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+      php: 8.2
+    commands:
+      - echo "Installing NPM packages..."
+      - npm install
+      - echo "Installing PHP Sodium extension..."
+      - apt-get update -y && apt-get install -y php8.2-sodium libsodium-dev
+      - phpenmod sodium
+      - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
+      - echo "Installing Composer dependencies..."
+      - composer install --no-interaction --prefer-dist --optimize-autoloader
+
+  pre_build:
+    commands:
+      - echo "Pre-build phase started."
+
+  build:
+    commands:
+      - echo "Running build scripts..."
+      - npm run build
+
+  post_build:
+    commands:
+      - echo "✅ Build completed successfully!"
+      - echo "Listing all files:"
+      - ls -al
+
+artifacts:
+  files:
+    - '**/*'
