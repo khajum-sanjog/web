@@ -4,16 +4,22 @@ phases:
   install:
     runtime-versions:
       nodejs: 22
-      php: 8.2
+      php: 8.3
     commands:
+      - echo "Updating system packages..."
+      - apt-get update -y
+      - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip
+
       - echo "Installing NPM packages..."
       - npm install
-      - echo "Installing PHP Sodium extension..."
-      - apt-get update -y && apt-get install -y php8.2-sodium libsodium-dev
-      - phpenmod sodium
-      - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
+
       - echo "Installing Composer dependencies..."
+      - curl -sS https://getcomposer.org/installer | php
+      - mv composer.phar /usr/local/bin/composer
       - composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - echo "Checking PHP extensions..."
+      - php -m | grep -E 'sodium|curl|mbstring|openssl|xml'
 
   pre_build:
     commands:
