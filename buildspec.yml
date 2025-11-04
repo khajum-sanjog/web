@@ -4,7 +4,7 @@ phases:
   install:
     runtime-versions:
       nodejs: 22
-      php: 8.3
+      php: 8.2
     commands:
       - echo "Updating system packages..."
       - apt-get update -y
@@ -13,9 +13,11 @@ phases:
       - echo "Installing NPM packages..."
       - npm install
 
-      - echo "Installing Composer dependencies..."
+      - echo "Installing Composer globally..."
       - curl -sS https://getcomposer.org/installer | php
       - mv composer.phar /usr/local/bin/composer
+
+      - echo "Installing Composer dependencies..."
       - composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - echo "Checking PHP extensions..."
