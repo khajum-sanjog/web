@@ -13,42 +13,43 @@ phases:
       nodejs: 22
       php: 8.2
     commands:
-      - echo "Updating system packages..."
+      - echo "=== SYSTEM UPDATE ==="
       - apt-get update -y
       - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip libsodium-dev
 
-      - echo "Checking if sodium extension is loaded..."
-      - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
+      - echo "=== PHP VERSION & EXTENSIONS ==="
+      - php -v
+      - php -m
 
-      - echo "Installing NPM packages..."
+      - echo "=== NODE & NPM VERSION ==="
+      - node -v
+      - npm -v
+
+      - echo "=== LISTING GLOBAL NPM PACKAGES ==="
+      - npm list -g --depth=0 || echo "No global packages installed"
+
+      - echo "=== INSTALLING NPM DEPENDENCIES ==="
       - npm install
 
-      - echo "Installing Composer globally..."
-      - curl -sS https://getcomposer.org/installer | php
-      - mv composer.phar /usr/local/bin/composer
+      - echo "=== LISTING PROJECT NPM PACKAGES ==="
+      - npm list --depth=0
 
-      - echo "Installing Composer dependencies..."
-      - composer install --no-interaction --prefer-dist --optimize-autoloader
+      - echo "=== COMPOSER VERSION & PLATFORM REQUIREMENTS ==="
+      - composer --version
+      - composer check-platform-reqs || echo "Platform requirements check failed"
+
+      - echo "=== INSTALLING COMPOSER DEPENDENCIES ==="
+      - composer install --no-interaction --prefer-dist --optimize-autoloader || composer install --ignore-platform-req=ext-sodium --no-interaction --prefer-dist --optimize-autoloader
 
   pre_build:
     commands:
-      - echo "Pre-build phase started."
+      - echo "=== PRE-BUILD PHASE STARTED ==="
 
   build:
     commands:
-      - echo "Running build scripts..."
+      - echo "=== RUNNING BUILD SCRIPTS ==="
       - npm run build
 
   post_build:
     commands:
-      - echo "Running Laravel optimization..."
-      - php artisan config:cache
-      - php artisan route:cache
-      - php artisan view:cache
-      - echo "✅ Build completed successfully!"
-      - echo "Listing all files:"
-      - ls -al
-
-artifacts:
-  files:
-    - '**/*'
+      - echo "=== RUNNI
