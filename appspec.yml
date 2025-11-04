@@ -2,18 +2,18 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /var/www/html/payment
+    destination: /var/www/html/paymentv2
 file_exists_behavior: OVERWRITE
 
 permissions:
-  - object: /var/www/html/payment
+  - object: /var/www/html/paymentv2
     owner: ubuntu
     group: ubuntu
     mode: 775
     type:
       - directory
 
-  - object: /var/www/html/payment
+  - object: /var/www/html/paymentv2
     owner: ubuntu
     group: ubuntu
     except: [/var/www/html/payment/storage]
