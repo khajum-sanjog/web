@@ -52,4 +52,23 @@ phases:
 
   post_build:
     commands:
-      - echo "=== RUNNI
+      - echo "=== RUNNING LARAVEL OPTIMIZATION ==="
+      - php artisan config:cache
+      - php artisan route:cache
+      - php artisan view:cache
+
+      - echo "=== BUILD COMPLETED SUCCESSFULLY ==="
+      - echo "Listing all files:"
+      - ls -al
+      - echo "=== ENVIRONMENT SUMMARY ==="
+      - node -v
+      - npm -v
+      - php -v
+      - composer --version
+      - php -m
+      - npm list --depth=0
+      - composer show --installed
+
+artifacts:
+  files:
+    - '**/*'
