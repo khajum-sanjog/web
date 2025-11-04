@@ -17,8 +17,7 @@ phases:
       - apt-get update -y
       - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip libsodium-dev
 
-      - echo "Enable sodium extension..."
-      - phpenmod sodium
+      - echo "Checking if sodium extension is loaded..."
       - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
 
       - echo "Installing NPM packages..."
