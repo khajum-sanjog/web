@@ -8,7 +8,11 @@ phases:
     commands:
       - echo "Updating system packages..."
       - apt-get update -y
-      - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip
+      - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip libsodium-dev php8.2-sodium
+
+      - echo "Ensure sodium extension is enabled..."
+      - phpenmod sodium
+      - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
 
       - echo "Installing NPM packages..."
       - npm install
@@ -19,9 +23,6 @@ phases:
 
       - echo "Installing Composer dependencies..."
       - composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - echo "Checking PHP extensions..."
-      - php -m | grep -E 'sodium|curl|mbstring|openssl|xml'
 
   pre_build:
     commands:
