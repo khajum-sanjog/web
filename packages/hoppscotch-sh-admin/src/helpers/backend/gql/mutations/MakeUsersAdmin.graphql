@@ -1,3 +1,0 @@
-mutation MakeUsersAdmin($userUIDs: [ID!]!) {
-  makeUsersAdmin(userUIDs: $userUIDs)
-}

@@ -1,3 +1,0 @@
-mutation UpdateCollectionOrder($collectionID: ID!, $destCollID: ID) {
-  updateCollectionOrder(collectionID: $collectionID, destCollID: $destCollID)
-}

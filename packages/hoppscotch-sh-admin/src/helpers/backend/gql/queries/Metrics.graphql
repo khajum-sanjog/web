@@ -1,8 +1,0 @@
-query Metrics {
-  infra {
-    usersCount
-    teamsCount
-    teamRequestsCount
-    teamCollectionsCount
-  }
-}

@@ -1,7 +1,0 @@
-mutation RemoveUsersByAdmin($userUIDs: [ID!]!) {
-  removeUsersByAdmin(userUIDs: $userUIDs) {
-    userUID
-    isDeleted
-    errorMessage
-  }
-}

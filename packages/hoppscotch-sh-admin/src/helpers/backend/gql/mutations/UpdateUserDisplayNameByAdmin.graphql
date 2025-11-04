@@ -1,3 +1,0 @@
-mutation UpdateUserDisplayNameByAdmin($userUID: ID!, $name: String!) {
-  updateUserDisplayNameByAdmin(userUID: $userUID, displayName: $name)
-}
