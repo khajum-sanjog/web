@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Authorize.net Payment Page</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #f0f0f0;
+            }
+
+            .container {
+                text-align: center;
+                padding: 20px;
+                background-color: #fff;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                width: 100%;
+                max-width: 600px;
+            }
+
+            input {
+                padding: 10px;
+                margin: 10px;
+                width: 200px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            button {
+                padding: 10px 20px;
+                background-color: #28a745;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+            button:hover {
+                background-color: #218838;
+            }
+
+            button:disabled {
+                background-color: #6c757d;
+                cursor: not-allowed;
+            }
+
+            #paymentForm {
+                margin-top: 20px;
+                padding: 10px;
+            }
+
+            .tabs {
+                display: flex;
+                border-bottom: 1px solid #ccc;
+                margin-bottom: 20px;
+            }
+
+            .tab {
+                flex: 1;
+                padding: 10px;
+                text-align: center;
+                cursor: pointer;
+                background-color: #f9f9f9;
+                border: 1px solid #ccc;
+                border-bottom: none;
+                border-radius: 4px 4px 0 0;
+            }
+
+            .tab.active {
+                background-color: #28a745;
+                border-bottom: 1px solid #218838;
+                color: white;
+            }
+
+            .tab-content {
+                display: none;
+            }
+
+            .tab-content.active {
+                display: block;
+            }
+
+            #payment_error {
+                color: #fff;
+                margin-bottom: 15px;
+                padding: 10px;
+                background-color: red;
+                display: none;
+                width: 300px;
+                border-radius: 4px;
+                margin: 0 auto;
+                transition: opacity 0.3s;
+            }
+
+            #payment_error[style*="block"] {
+                opacity: 1;
+            }
+
+            #payment_error[style*="none"] {
+                opacity: 0;
+            }
+
+            .loading::after {
+                content: " Loading...";
+                animation: spin 1s infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    content: " Loading...";
+                }
+                33% {
+                    content: " Loading.";
+                }
+                66% {
+                    content: " Loading..";
+                }
+                100% {
+                    content: " Loading...";
+                }
+            }
+
+            .authnet-container,
+            .google-pay-container {
+                text-align: left;
+                padding: 10px;
+            }
+
+            .authnet-card,
+            .google-pay-input {
+                margin-bottom: 12px;
+                padding: 8px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                width: 100%;
+                max-width: 200px;
+                outline: none;
+            }
+
+            .authnet-card:focus,
+            .google-pay-input:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+            }
+
+            .authnet-label,
+            .google-pay-label {
+                display: block;
+                font-size: 14px;
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 4px;
+            }
+
+            .authnet-error,
+            .google-pay-error {
+                color: #b91c1c;
+                margin-bottom: 12px;
+                padding: 10px;
+                background: #fee2e2;
+                border-radius: 6px;
+                display: none;
+                max-width: 400px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h2>Authorize.net Payment</h2>
+            <input
+                type="number"
+                id="amount"
+                placeholder="Enter amount"
+                min="0"
+                step="0.01"
+            />
+            <br />
+            <button id="loadButton" onclick="loadPaymentForm()">
+                Load Payment Form
+            </button>
+            <div id="payment_error"></div>
+            <div id="paymentForm"></div>
+        </div>
+
+        <script>
+            (async () => {
+                async function getToken() {
+                    try {
+                        const response = await fetch("/api/login", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            },
+                            body: JSON.stringify({
+                                email: "authorize_user_680752ae81167@voxmg.com",
+                                password: "password",
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(
+                                errorData.message || "Login failed"
+                            );
+                        }
+
+                        const data = await response.json();
+                        if (!data.data || !data.data.access_token) {
+                            throw new Error("No access token received");
+                        }
+
+                        return data.data.access_token;
+                    } catch (error) {
+                        console.error("Error fetching token:", error);
+                        showError("Failed to authenticate. Please try again.");
+                        throw error;
+                    }
+                }
+
+                function showError(message) {
+                    const errorDiv = document.getElementById("payment_error");
+                    errorDiv.innerText = message;
+                    errorDiv.style.display = "block";
+                }
+
+                function clearError() {
+                    const errorDiv = document.getElementById("payment_error");
+                    errorDiv.innerText = "";
+                    errorDiv.style.display = "none";
+                }
+
+                let token;
+                try {
+                    token = await getToken();
+                } catch (error) {
+                    return;
+                }
+
+                const loadedScripts = new Set();
+
+                async function loadPaymentForm() {
+                    clearError();
+                    const amount = parseFloat(
+                        document.getElementById("amount").value
+                    );
+                    if (!amount || amount <= 0) {
+                        showError("Please enter a valid amount");
+                        return;
+                    }
+
+                    try {
+                        const loadButton =
+                            document.getElementById("loadButton");
+                        loadButton.disabled = true;
+                        loadButton.classList.add("loading");
+                        const response = await fetch("/api/payments/template", {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            },
+                            body: JSON.stringify({ amount }),
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            const errorMessage =
+                                errorData.message ||
+                                (errorData.errors
+                                    ? Object.values(errorData.errors).join(", ")
+                                    : "Unknown error");
+                            showError(`Error: ${errorMessage}`);
+                            return;
+                        }
+
+                        const data = await response.json();
+                        console.log("Received UI data:", data);
+                        // Use Object.values to convert result object to array
+                        data.uiDatas = Object.values(data.result || {});
+                        console.log("Transformed uiDatas:", data.uiDatas);
+
+                        const formContainer =
+                            document.getElementById("paymentForm");
+                        formContainer.innerHTML = "";
+
+                        if (data.uiDatas && data.uiDatas.length > 0) {
+                            const tabsContainer = document.createElement("div");
+                            tabsContainer.className = "tabs";
+                            const contentsContainer =
+                                document.createElement("div");
+
+                            data.uiDatas.forEach((uiData, index) => {
+                                const tab = document.createElement("div");
+                                tab.className = "tab";
+                                tab.textContent =
+                                    uiData.method === "card"
+                                        ? "Card Payment"
+                                        : uiData.method === "googlepay"
+                                        ? "Google Pay"
+                                        : "Apple Pay";
+                                tab.dataset.method = uiData.method;
+                                if (index === 0) tab.classList.add("active");
+
+                                const content = document.createElement("div");
+                                content.className = "tab-content";
+                                content.id = `payment-${uiData.method}-${index}`;
+                                if (index === 0)
+                                    content.classList.add("active");
+
+                                const form = document.createElement("form");
+                                form.id = `authnet-form-${uiData.method}-${index}`;
+                                form.className = "authnet-form";
+
+                                form.appendChild(content);
+                                contentsContainer.appendChild(form);
+                                tabsContainer.appendChild(tab);
+
+                                if (
+                                    uiData.scriptUrl &&
+                                    !loadedScripts.has(uiData.scriptUrl)
+                                ) {
+                                    const scriptElement =
+                                        document.createElement("script");
+                                    scriptElement.src = uiData.scriptUrl;
+                                    scriptElement.async = true;
+                                    scriptElement.onload = () => {
+                                        console.log(
+                                            "Loaded script:",
+                                            uiData.scriptUrl
+                                        );
+                                        loadedScripts.add(uiData.scriptUrl);
+                                        // Inject HTML after script loads
+                                        content.innerHTML = uiData.html;
+                                        if (uiData.method === "card") {
+                                            const submitButton =
+                                                document.createElement(
+                                                    "button"
+                                                );
+                                            submitButton.type = "button";
+                                            submitButton.textContent =
+                                                "Pay Now";
+                                            submitButton.onclick = () => {
+                                                if (
+                                                    window.fnCreatePaymentToken
+                                                ) {
+                                                    window.fnCreatePaymentToken();
+                                                } else {
+                                                    showError(
+                                                        "Card payment form not initialized. Please try again."
+                                                    );
+                                                }
+                                            };
+                                            content.appendChild(submitButton);
+                                        }
+                                        // Inject inline script
+                                        if (uiData.script) {
+                                            const inlineScript =
+                                                document.createElement(
+                                                    "script"
+                                                );
+                                            inlineScript.textContent =
+                                                uiData.script;
+                                            document.body.appendChild(
+                                                inlineScript
+                                            );
+                                            console.log(
+                                                "Injected inline script for:",
+                                                uiData.method
+                                            );
+                                        }
+                                    };
+                                    scriptElement.onerror = () => {
+                                        console.error(
+                                            "Failed to load script:",
+                                            uiData.scriptUrl
+                                        );
+                                        showError(
+                                            `Failed to load payment script for ${uiData.method}`
+                                        );
+                                        content.innerHTML = `<p>Error: Failed to load ${uiData.method} form.</p>`;
+                                    };
+                                    document.body.appendChild(scriptElement);
+                                } else {
+                                    // Fallback for methods without scriptUrl
+                                    content.innerHTML = uiData.html;
+                                    if (uiData.method === "card") {
+                                        const submitButton =
+                                            document.createElement("button");
+                                        submitButton.type = "button";
+                                        submitButton.textContent = "Pay Now";
+                                        submitButton.onclick = () => {
+                                            if (window.fnCreatePaymentToken) {
+                                                window.fnCreatePaymentToken();
+                                            } else {
+                                                showError(
+                                                    "Card payment form not initialized. Please try again."
+                                                );
+                                            }
+                                        };
+                                        content.appendChild(submitButton);
+                                    }
+                                    if (uiData.script) {
+                                        const inlineScript =
+                                            document.createElement("script");
+                                        inlineScript.textContent =
+                                            uiData.script;
+                                        document.body.appendChild(inlineScript);
+                                        console.log(
+                                            "Injected inline script for:",
+                                            uiData.method
+                                        );
+                                    }
+                                }
+                            });
+
+                            tabsContainer.addEventListener("click", (e) => {
+                                if (e.target.classList.contains("tab")) {
+                                    document
+                                        .querySelectorAll(".tab")
+                                        .forEach((t) =>
+                                            t.classList.remove("active")
+                                        );
+                                    document
+                                        .querySelectorAll(".tab-content")
+                                        .forEach((c) =>
+                                            c.classList.remove("active")
+                                        );
+                                    e.target.classList.add("active");
+                                    document
+                                        .getElementById(
+                                            `payment-${
+                                                e.target.dataset.method
+                                            }-${[
+                                                ...tabsContainer.children,
+                                            ].indexOf(e.target)}`
+                                        )
+                                        .classList.add("active");
+                                }
+                            });
+
+                            formContainer.appendChild(tabsContainer);
+                            formContainer.appendChild(contentsContainer);
+                        } else {
+                            showError("No payment methods available");
+                            return;
+                        }
+
+                        window.googlePayAmount = amount;
+                        window.applePayAmount = amount;
+
+                        document.getElementById("loadButton").style.display =
+                            "none";
+                    } catch (error) {
+                        console.error("Error loading payment form:", error);
+                        showError(
+                            "Failed to load payment form. Please try again."
+                        );
+                    } finally {
+                        const loadButton =
+                            document.getElementById("loadButton");
+                        loadButton.disabled = false;
+                        loadButton.classList.remove("loading");
+                    }
+                }
+
+                window.addEventListener(
+                    "paymentNonceGenerated",
+                    async (event) => {
+                        const {
+                            nonce,
+                            descriptor,
+                            payment_method,
+                            amount,
+                            email,
+                            name,
+                        } = event.detail;
+
+                        console.log("Received paymentNonceGenerated:", {
+                            nonce,
+                            descriptor,
+                            payment_method,
+                            amount,
+                            email,
+                            name,
+                        });
+
+                        try {
+                            const payload = {
+                                payment_method_id: nonce,
+                                dataDescriptor: descriptor,
+                                member_email: email || "default@example.com",
+                                member_name: name || "Default User",
+                                payment_method,
+                                amount: parseFloat(amount).toFixed(2),
+                            };
+                            console.log("Submitting payment payload:", payload);
+
+                            const response = await fetch(
+                                "/api/payments/process",
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                        Accept: "application/json",
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify(payload),
+                                }
+                            );
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                const errorMessage =
+                                    errorData.message || "Unknown error";
+                                console.error("Payment error:", errorData);
+                                showError(
+                                    `Payment processing failed: ${errorMessage}`
+                                );
+                                return;
+                            }
+
+                            const result = await response.json();
+                            alert("Payment processed successfully!");
+                            console.log("Payment response:", result);
+
+                            document.getElementById("paymentForm").innerHTML =
+                                "";
+                            document.getElementById(
+                                "loadButton"
+                            ).style.display = "";
+                            document.getElementById("amount").value = "";
+                            clearError();
+                        } catch (error) {
+                            console.error("Error processing payment:", error);
+                            showError(
+                                "Failed to process payment. Please try again."
+                            );
+                        }
+                    }
+                );
+
+                window.loadPaymentForm = loadPaymentForm;
+            })();
+        </script>
+    </body>
+</html>

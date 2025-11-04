@@ -1,3 +1,0 @@
-mutation RemoveUserFromTeamByAdmin($userUid: ID!, $teamID: ID!) {
-  removeUserFromTeamByAdmin(userUid: $userUid, teamID: $teamID)
-}
