@@ -1,5 +1,12 @@
 version: 0.2
 
+env:
+  cache:
+    paths:
+      - '/root/.composer/cache/**/*'
+      - '/root/.npm/**/*'
+      - 'node_modules/**/*'
+
 phases:
   install:
     runtime-versions:
@@ -8,9 +15,9 @@ phases:
     commands:
       - echo "Updating system packages..."
       - apt-get update -y
-      - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip libsodium-dev php8.2-sodium
+      - apt-get install -y unzip git curl libpng-dev libonig-dev libxml2-dev zip libsodium-dev
 
-      - echo "Ensure sodium extension is enabled..."
+      - echo "Enable sodium extension..."
       - phpenmod sodium
       - php -m | grep sodium || echo "⚠️ Sodium extension not found!"
 
@@ -35,6 +42,10 @@ phases:
 
   post_build:
     commands:
+      - echo "Running Laravel optimization..."
+      - php artisan config:cache
+      - php artisan route:cache
+      - php artisan view:cache
       - echo "✅ Build completed successfully!"
       - echo "Listing all files:"
       - ls -al
