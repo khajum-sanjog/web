@@ -10,7 +10,7 @@ env:
 phases:
   install:
     runtime-versions:
-      nodejs: 22
+      nodejs: 25
       php: 8.2
     commands:
       - echo "=== SYSTEM UPDATE ==="
