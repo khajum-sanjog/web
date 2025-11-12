@@ -1,5 +1,5 @@
 # 💳 Culture Shock Payments 
- 
+  
 ## Introduction
 
 **Culture Shock** is a platform designed to celebrate cultural diversity and foster a positive work environment. As a recognition and reward system, **Culture Shock** empowers teams to acknowledge dedication, effort, and achievements by offering meaningful rewards to employees. To power its gifting and rewards functionality, **Culture Shock** integrates with the **CULTURESHOCK-PAYMENTS** microservice — a backend service responsible for securely handling financial transactions. <br>
